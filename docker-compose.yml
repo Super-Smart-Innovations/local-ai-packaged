@@ -14,6 +14,7 @@ volumes:
   langfuse_clickhouse_data:
   langfuse_clickhouse_logs:
   langfuse_minio_data:
+  letsencrypt-certs:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:latest
@@ -36,10 +37,14 @@ x-ollama: &service-ollama
   expose:
     - 11434/tcp
   environment:
-    - OLLAMA_CONTEXT_LENGTH=8192
+    - OLLAMA_CONTEXT_LENGTH=32768
     - OLLAMA_FLASH_ATTENTION=1
     - OLLAMA_KV_CACHE_TYPE=q8_0
     - OLLAMA_MAX_LOADED_MODELS=2
+    - OLLAMA_NUM_THREAD=8
+    - OLLAMA_NUM_GPU=1
+    - OLLAMA_MAX_QUEUE=512
+    - OLLAMA_RUNNERS_DIR=/tmp/runners
   volumes:
     - ollama_storage:/root/.ollama
 
@@ -51,7 +56,7 @@ x-init-ollama: &init-ollama
   entrypoint: /bin/sh
   command:
     - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen2.5:7b-instruct-q4_K_M; OLLAMA_HOST=ollama:11434 ollama pull nomic-embed-text"
+    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull qwen3-vl:235b-instruct-cloud; OLLAMA_HOST=ollama:11434 ollama pull qwen3-embedding:0.6b"
 
 services:
   flowise:
@@ -69,6 +74,19 @@ services:
     volumes:
         - ~/.flowise:/root/.flowise
     entrypoint: /bin/sh -c "sleep 3; flowise start"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -80,6 +98,19 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - open-webui:/app/backend/data
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 6G
+        reservations:
+          cpus: '1.5'
+          memory: 3G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   n8n-import:
     <<: *service-n8n
@@ -104,6 +135,19 @@ services:
     depends_on:
       n8n-import:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   qdrant:
     image: qdrant/qdrant
@@ -112,8 +156,24 @@ services:
     expose:
       - 6333/tcp
       - 6334/tcp
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
     volumes:
       - qdrant_storage:/qdrant/storage
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   neo4j:
     image: neo4j:latest
@@ -123,12 +183,32 @@ services:
         - ./neo4j/data:/data
         - ./neo4j/plugins:/plugins
     expose:
-      - 7473/tcp
-      - 7474/tcp
-      - 7687/tcp
+        - 7473/tcp
+        - 7474/tcp
+        - 7687/tcp
+    ports:
+        - "127.0.0.1:7474:7474"
+        - "127.0.0.1:7687:7687"
     environment:
         - NEO4J_AUTH=${NEO4J_AUTH:-"neo4j/your_password"}
+        - NEO4J_PLUGINS=["graph-data-science"]
+        - NEO4J_dbms_memory_heap_initial__size=4G
+        - NEO4J_dbms_memory_heap_max__size=8G
+        - NEO4J_dbms_memory_pagecache_size=4G
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 16G
+        reservations:
+          cpus: '2.0'
+          memory: 8G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   caddy:
     container_name: caddy
@@ -145,6 +225,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./caddy-addon:/etc/caddy/addons:ro
+      - ./letsencrypt:/etc/letsencrypt:ro
       - caddy-data:/data:rw
       - caddy-config:/config:rw
     environment:
@@ -161,11 +242,19 @@ services:
       - ALL
     cap_add:
       - NET_BIND_SERVICE
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
-        max-file: "1"
+        max-size: "50m"
+        max-file: "2"
 
   langfuse-worker:
     image: langfuse/langfuse-worker:3
@@ -181,6 +270,19 @@ services:
         condition: service_healthy
     expose:
      - 3030/tcp
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
     environment: &langfuse-worker-env
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       SALT: ${LANGFUSE_SALT}
@@ -231,6 +333,19 @@ services:
     depends_on: *langfuse-depends-on
     expose:
       - 3000/tcp
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
     environment:
       <<: *langfuse-worker-env
       NEXTAUTH_URL: http://localhost:3002
@@ -253,6 +368,9 @@ services:
       - 8123/tcp
       - 9000/tcp
       - 9009/tcp
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
     environment:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: clickhouse
@@ -260,6 +378,19 @@ services:
     volumes:
       - langfuse_clickhouse_data:/var/lib/clickhouse
       - langfuse_clickhouse_logs:/var/log/clickhouse-server
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
       interval: 5s
@@ -276,11 +407,27 @@ services:
     expose:
       - 9000/tcp
       - 9001/tcp
+    ports:
+      - "127.0.0.1:9090:9000"
+      - "127.0.0.1:9091:9001"
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - langfuse_minio_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 1s
@@ -298,20 +445,50 @@ services:
       retries: 10
     expose:
       - 5432/tcp
+    ports:
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
+      POSTGRES_SHARED_BUFFERS: 2GB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 6GB
+      POSTGRES_MAINTENANCE_WORK_MEM: 512MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+      POSTGRES_RANDOM_PAGE_COST: 1.1
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: 200
+      POSTGRES_WORK_MEM: 10485kB
+      POSTGRES_MIN_WAL_SIZE: 1GB
+      POSTGRES_MAX_WAL_SIZE: 4GB
+      POSTGRES_MAX_CONNECTIONS: 200
+      POSTGRES_SHARED_PRELOAD_LIBRARIES: pg_stat_statements,pg_buffercache
     volumes:
-      - langfuse_postgres_data:/var/lib/postgresql/data
+      - langfuse_postgres_data:/var/lib/postgresql
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   redis:
     container_name: redis
     image: docker.io/valkey/valkey:8-alpine
-    command: valkey-server --save 30 1 --loglevel warning
+    command: valkey-server --save 30 1 --loglevel warning --maxmemory 2gb --maxmemory-policy allkeys-lru --tcp-keepalive 300 --timeout 300
     restart: unless-stopped
     expose:
       - 6379/tcp
+    ports:
+      - "127.0.0.1:6380:6379"
     volumes:
       - valkey-data:/data
     cap_drop:
@@ -320,11 +497,19 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
-        max-file: "1"
+        max-size: "50m"
+        max-file: "2"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
@@ -349,26 +534,59 @@ services:
       - CHOWN
       - SETGID
       - SETUID
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
     logging:
       driver: "json-file"
       options:
-        max-size: "1m"
-        max-file: "1"
+        max-size: "50m"
+        max-file: "2"
 
   ollama-cpu:
     profiles: ["cpu"]
     <<: *service-ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 32G
+        reservations:
+          cpus: '4.0'
+          memory: 16G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   ollama-gpu:
     profiles: ["gpu-nvidia"]
     <<: *service-ollama
     deploy:
       resources:
+        limits:
+          cpus: '8.0'
+          memory: 32G
         reservations:
+          cpus: '4.0'
+          memory: 16G
           devices:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   ollama-gpu-amd:
     profiles: ["gpu-amd"]
@@ -377,6 +595,19 @@ services:
     devices:
       - "/dev/kfd"
       - "/dev/dri"
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 32G
+        reservations:
+          cpus: '4.0'
+          memory: 16G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
 
   ollama-pull-llama-cpu:
     profiles: ["cpu"]

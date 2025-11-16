@@ -1,12 +1,42 @@
 .env
-volumes/
-shared/
-neo4j/
-shared-backup/
 .env.test
-searxng/settings.yml
-searxng/uwsgi*
+.env.*
 (2).env
 (2).env.backup
+supabase/docker/.env*
+
+# Service volumes & generated data
+volumes/
+shared/
+shared-backup/
+neo4j/
+searxng/settings.yml
+searxng/uwsgi*
+
+# Dependency & build artifacts
+node_modules/
+.pnpm-store/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs & reports
+*.log
+reports/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
+.roo/
+
+# Tooling metadata
 .amazonq
 gcloud.json
+rules-gemini/
+gemini.md
+.windsurf/
+.windsurfrules
+.windsurfrules.md

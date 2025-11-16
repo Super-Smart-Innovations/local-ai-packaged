@@ -1,0 +1,77 @@
+﻿# Inter-Container Communication Optimization
+# Configuration for optimal service-to-service communication
+
+# DNS optimization for Docker networks
+services:
+  # Example service configuration with network optimizations
+  n8n:
+    networks:
+      localai-network:
+        aliases:
+          - n8n.local
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    dns_search:
+      - localai.local
+    dns_options:
+      - timeout:2
+      - attempts:3
+
+  open-webui:
+    networks:
+      localai-network:
+        aliases:
+          - openwebui.local
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    dns_search:
+      - localai.local
+
+  ollama:
+    networks:
+      ai-network:
+        aliases:
+          - ollama.local
+      localai-network:
+        aliases:
+          - ollama.api.local
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  postgres:
+    networks:
+      database-network:
+        aliases:
+          - postgres.local
+      localai-network:
+        aliases:
+          - db.local
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+  redis:
+    networks:
+      localai-network:
+        aliases:
+          - redis.local
+          - cache.local
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+# Network connectivity matrix (for reference)
+# This shows which services need to communicate with each other
+#
+# Service       -> n8n | open-webui | ollama | postgres | redis | qdrant | neo4j | caddy
+# n8n           ->  -  |     âœ“      |   âœ“    |    âœ“     |   âœ“   |   âœ“    |   âœ“   |   âœ“
+# open-webui    ->  âœ“  |     -      |   âœ“    |    -     |   -   |   âœ“    |   -   |   âœ“
+# ollama        ->  âœ“  |     âœ“      |   -    |    -     |   -   |   -    |   -   |   âœ“
+# postgres      ->  âœ“  |     -      |   -    |    -     |   -   |   -    |   âœ“   |   -
+# redis         ->  âœ“  |     -      |   -    |    -     |   -   |   -    |   -   |   -
+# qdrant        ->  âœ“  |     âœ“      |   -    |    -     |   -   |   -    |   -   |   âœ“
+# neo4j         ->  âœ“  |     -      |   -    |    âœ“     |   -    |   -    |   -   |   âœ“
+# caddy         ->  âœ“  |     âœ“      |   âœ“    |    -     |   -   |   âœ“    |   âœ“   |   -

@@ -1,12 +1,8 @@
 # Self-hosted AI Package
 
-**Self-hosted AI Package** is an open, docker compose template that
-quickly bootstraps a fully featured Local AI and Low Code development
-environment including Ollama for your local LLMs, Open WebUI for an interface to chat with your N8N agents, and Supabase for your database, vector store, and authentication. 
+**Self-hosted AI Package** is an open, docker compose template that quickly bootstraps a fully featured Local AI and Low Code development environment including Ollama for your local LLMs, Open WebUI for an interface to chat with your N8N agents, and Supabase for your database, vector store, and authentication.
 
-This is Cole's version with a couple of improvements and the addition of Supabase, Open WebUI, Flowise, Neo4j, Langfuse, SearXNG, and Caddy!
-Also, the local RAG AI Agent workflows from the video will be automatically in your 
-n8n instance if you use this setup instead of the base one provided by n8n!
+This is Cole's version with a couple of improvements and the addition of Supabase, Open WebUI, Flowise, Neo4j, Langfuse, SearXNG, and Caddy! Also, the local RAG AI Agent workflows from the video will be automatically in your n8n instance if you use this setup instead of the base one provided by n8n!
 
 **IMPORANT**: Supabase has updated a couple environment variables so you may have to add some new default values in your .env that I have in my .env.example if you have had this project up and running already and are just pulling new changes. Specifically, you need to add "POOLER_DB_POOL_SIZE=5" to your .env. This is required if you have had the package running before June 14th.
 
@@ -40,17 +36,13 @@ and run the latest local LLMs
 ✅ [**Open WebUI**](https://openwebui.com/) - ChatGPT-like interface to
 privately interact with your local models and N8N agents
 
-✅ [**Flowise**](https://flowiseai.com/) - No/low code AI agent
-builder that pairs very well with n8n
+✅ [**Flowise**](https://flowiseai.com/) - No/low code AI agent builder that pairs very well with n8n
 
-✅ [**Qdrant**](https://qdrant.tech/) - Open source, high performance vector
-store with an comprehensive API. Even though you can use Supabase for RAG, this was
-kept unlike Postgres since it's faster than Supabase so sometimes is the better option.
+✅ [**Qdrant**](https://qdrant.tech/) - Open source, high performance vector store with a comprehensive API. Even though you can use Supabase for RAG, this was kept unlike Postgres since it's faster than Supabase so sometimes is the better option.
 
-✅ [**Neo4j**](https://neo4j.com/) - Knowledge graph engine that powers tools like GraphRAG, LightRAG, and Graphiti 
+✅ [**Neo4j**](https://neo4j.com/) - Knowledge graph engine that powers tools like GraphRAG, LightRAG, and Graphiti.
 
-✅ [**SearXNG**](https://searxng.org/) - Open source, free internet metasearch engine which aggregates 
-results from up to 229 search services. Users are neither tracked nor profiled, hence the fit with the local AI package.
+✅ [**SearXNG**](https://searxng.org/) - Open source, free internet metasearch engine which aggregates results from up to 229 search services. Users are neither tracked nor profiled, hence the fit with the local AI package.
 
 ✅ [**Caddy**](https://caddyserver.com/) - Managed HTTPS/TLS for custom domains
 
@@ -67,6 +59,7 @@ Before you begin, make sure you have the following software installed:
 ## Installation
 
 Clone the repository and navigate to the project directory:
+
 ```bash
 git clone -b stable https://github.com/coleam00/local-ai-packaged.git
 cd local-ai-packaged
@@ -74,8 +67,9 @@ cd local-ai-packaged
 
 Before running the services, you need to set up your environment variables for Supabase following their [self-hosting guide](https://supabase.com/docs/guides/self-hosting/docker#securing-your-services).
 
-1. Make a copy of `.env.example` and rename it to `.env` in the root directory of the project
-2. Set the following required environment variables:
+1. Make a copy of `.env.example` and rename it to `.env` in the root directory of the project.
+1. Set the following required environment variables:
+
    ```bash
    ############
    # N8N Configuration
@@ -96,24 +90,24 @@ Before running the services, you need to set up your environment variables for S
 
    ############
    # Neo4j Secrets
-   ############   
+   ############
    NEO4J_AUTH=
 
    ############
    # Langfuse credentials
    ############
-
    CLICKHOUSE_PASSWORD=
    MINIO_ROOT_PASSWORD=
    LANGFUSE_SALT=
    NEXTAUTH_SECRET=
-   ENCRYPTION_KEY=  
+   ENCRYPTION_KEY=
    ```
 
 > [!IMPORTANT]
 > Make sure to generate secure random values for all secrets. Never use the example values in production.
 
-3. Set the following environment variables if deploying to production, otherwise leave commented:
+1. Set the following environment variables if deploying to production, otherwise leave commented:
+
    ```bash
    ############
    # Caddy Config
@@ -127,7 +121,7 @@ Before running the services, you need to set up your environment variables for S
    SEARXNG_HOSTNAME=searxng.yourdomain.com
    NEO4J_HOSTNAME=neo4j.yourdomain.com
    LETSENCRYPT_EMAIL=your-email-address
-   ```   
+   ```
 
 ---
 
@@ -154,11 +148,13 @@ python start_services.py --profile gpu-amd
 If you're using a Mac with an M1 or newer processor, you can't expose your GPU to the Docker instance, unfortunately. There are two options in this case:
 
 1. Run the starter kit fully on CPU:
+
    ```bash
    python start_services.py --profile cpu
    ```
 
 2. Run Ollama on your Mac for faster inference, and connect to that from the n8n instance:
+
    ```bash
    python start_services.py --profile none
    ```
@@ -167,7 +163,7 @@ If you're using a Mac with an M1 or newer processor, you can't expose your GPU t
 
 #### For Mac users running OLLAMA locally
 
-If you're running OLLAMA locally on your Mac (not in Docker), you need to modify the OLLAMA_HOST environment variable in the n8n service configuration. Update the x-n8n section in your Docker Compose file as follows:
+If you're running OLLAMA locally on your Mac (not in Docker), you need to modify the `OLLAMA_HOST` environment variable in the n8n service configuration. Update the `x-n8n` section in your Docker Compose file as follows:
 
 ```yaml
 x-n8n: &service-n8n
@@ -177,11 +173,11 @@ x-n8n: &service-n8n
     - OLLAMA_HOST=host.docker.internal:11434
 ```
 
-Additionally, after you see "Editor is now accessible via: http://localhost:5678/":
+Additionally, after you see "Editor is now accessible via: <http://localhost:5678/>":
 
-1. Head to http://localhost:5678/home/credentials
+1. Head to <http://localhost:5678/home/credentials>
 2. Click on "Local Ollama service"
-3. Change the base URL to "http://host.docker.internal:11434/"
+3. Change the base URL to `http://host.docker.internal:11434/`
 
 ### For everyone else
 
@@ -190,18 +186,23 @@ python start_services.py --profile cpu
 ```
 
 ### The environment argument
+
 The **start-services.py** script offers the possibility to pass one of two options for the environment argument, **private** (default environment) and **public**:
+
 - **private:** you are deploying the stack in a safe environment, hence a lot of ports can be made accessible without having to worry about security
 - **public:** the stack is deployed in a public environment, which means the attack surface should be made as small as possible. All ports except for 80 and 443 are closed
 
 The stack initialized with
+
 ```bash
-   python start_services.py --profile gpu-nvidia --environment private
-   ```
+python start_services.py --profile gpu-nvidia --environment private
+```
+
 equals the one initialized with
+
 ```bash
-   python start_services.py --profile gpu-nvidia
-   ```
+python start_services.py --profile gpu-nvidia
+```
 
 ## Deploying to the Cloud
 
@@ -214,34 +215,33 @@ equals the one initialized with
 Before running the above commands to pull the repo and install everything:
 
 1. Run the commands as root to open up the necessary ports:
-   - ufw enable
-   - ufw allow 80 && ufw allow 443
-   - ufw reload
-   ---
-   **WARNING**
 
-   ufw does not shield ports published by docker, because the iptables rules configured by docker are analyzed before those configured by ufw. There is a solution to change this behavior, but that is out of scope for this project. Just make sure that all traffic runs through the caddy service via port 443. Port 80 should only be used to redirect to port 443.
+   ```bash
+   ufw enable
+   ufw allow 80 && ufw allow 443
+   ufw reload
+   ```
 
-   ---
-2. Run the **start-services.py** script with the environment argument **public** to indicate you are going to run the package in a public environment. The script will make sure that all ports, except for 80 and 443, are closed down, e.g.
+   > **Warning:** `ufw` does not shield ports published by Docker, because the iptables rules configured by Docker are analyzed before those configured by `ufw`. There is a solution to change this behavior, but that is out of scope for this project. Just make sure that all traffic runs through the Caddy service via port 443. Port 80 should only be used to redirect to port 443.
 
-```bash
+2. Run the `start_services.py` script with the environment argument `public` to indicate you are going to run the package in a public environment. The script will make sure that all ports, except for 80 and 443, are closed down. For example:
+
+   ```bash
    python3 start_services.py --profile gpu-nvidia --environment public
    ```
 
-3. Set up A records for your DNS provider to point your subdomains you'll set up in the .env file for Caddy
-to the IP address of your cloud instance.
+3. Set up A records for your DNS provider to point the subdomains you'll configure in the `.env` file for Caddy to the IP address of your cloud instance. For example, create an A record pointing `n8n.yourdomain.com` to the IP address of your cloud instance.
 
-   For example, A record to point n8n to [cloud instance IP] for n8n.yourdomain.com
-
-
-**NOTE**: If you are using a cloud machine without the "docker compose" command available by default, such as a Ubuntu GPU instance on DigitalOcean, run these commands before running start_services.py:
-
-- DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\\" -f4)
-- sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
-- sudo chmod +x /usr/local/bin/docker-compose
-- sudo mkdir -p /usr/local/lib/docker/cli-plugins
-- sudo ln -s /usr/local/bin/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+> [!NOTE]
+> If you are using a cloud machine without the `docker compose` command available by default, such as an Ubuntu GPU instance on DigitalOcean, run these commands before running `start_services.py`:
+>
+> ```bash
+> DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d" -f4)
+> sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+> sudo chmod +x /usr/local/bin/docker-compose
+> sudo mkdir -p /usr/local/lib/docker/cli-plugins
+> sudo ln -s /usr/local/bin/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+> ```
 
 ## ⚡️ Quick start and usage
 
@@ -250,42 +250,22 @@ pre-configured with network and disk so there isn’t much else you need to
 install. After completing the installation steps above, follow the steps below
 to get started.
 
-1. Open <http://localhost:5678/> in your browser to set up n8n. You’ll only
-   have to do this once. You are NOT creating an account with n8n in the setup here,
-   it is only a local account for your instance!
-2. Open the included workflow:
-   <http://localhost:5678/workflow/vTN9y2dLXqTiDfPT>
-3. Create credentials for every service:
-   
-   Ollama URL: http://ollama:11434
+1. Open <http://localhost:5678/> in your browser to set up n8n. You’ll only have to do this once. You are not creating an account with n8n in the setup here—this is only a local account for your instance.
+1. Open the included workflow at <http://localhost:5678/workflow/vTN9y2dLXqTiDfPT>.
+1. Create credentials for every service:
+   - Ollama URL: `http://ollama:11434`
+   - Postgres (through Supabase): use the database, username, and password from `.env`. **Important:** host should be `db`, since that is the name of the service running Supabase.
+   - Qdrant URL: `http://qdrant:6333` (the API key can be any value because this is running locally).
+   - Google Drive: follow [this guide from n8n](https://docs.n8n.io/integrations/builtin/credentials/google/). Do not use localhost for the redirect URI—any other domain you own will work. Alternatively, you can set up [local file triggers](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.localfiletrigger/).
+1. Select **Test workflow** to start running the workflow.
+1. If this is the first time you’re running the workflow, wait until Ollama finishes downloading Llama3.1. You can inspect the Docker console logs to check on the progress.
+1. Toggle the workflow as active and copy the “Production” webhook URL.
+1. Open <http://localhost:3000/> in your browser to set up Open WebUI. As with n8n, this creates a local account for your instance.
+1. Go to Workspace → Functions → Add Function, provide a name and description, then paste in the code from `n8n_pipe.py`. The function is also [published on Open WebUI's site](https://openwebui.com/f/coleam/n8n_pipe/).
+1. Click the gear icon and set the `n8n_url` to the production URL for the webhook you copied earlier.
+1. Toggle the function on so it becomes available in your model dropdown in the top left.
 
-   Postgres (through Supabase): use DB, username, and password from .env. IMPORTANT: Host is 'db'
-   Since that is the name of the service running Supabase
-
-   Qdrant URL: http://qdrant:6333 (API key can be whatever since this is running locally)
-
-   Google Drive: Follow [this guide from n8n](https://docs.n8n.io/integrations/builtin/credentials/google/).
-   Don't use localhost for the redirect URI, just use another domain you have, it will still work!
-   Alternatively, you can set up [local file triggers](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.localfiletrigger/).
-4. Select **Test workflow** to start running the workflow.
-5. If this is the first time you’re running the workflow, you may need to wait
-   until Ollama finishes downloading Llama3.1. You can inspect the docker
-   console logs to check on the progress.
-6. Make sure to toggle the workflow as active and copy the "Production" webhook URL!
-7. Open <http://localhost:3000/> in your browser to set up Open WebUI.
-You’ll only have to do this once. You are NOT creating an account with Open WebUI in the 
-setup here, it is only a local account for your instance!
-8. Go to Workspace -> Functions -> Add Function -> Give name + description then paste in
-the code from `n8n_pipe.py`
-
-   The function is also [published here on Open WebUI's site](https://openwebui.com/f/coleam/n8n_pipe/).
-
-9. Click on the gear icon and set the n8n_url to the production URL for the webhook
-you copied in a previous step.
-10. Toggle the function on and now it will be available in your model dropdown in the top left! 
-
-To open n8n at any time, visit <http://localhost:5678/> in your browser.
-To open Open WebUI at any time, visit <http://localhost:3000/>.
+To open n8n at any time, visit <http://localhost:5678/> in your browser. To open Open WebUI at any time, visit <http://localhost:3000/>.
 
 With your n8n instance, you’ll have access to over 400 integrations and a
 suite of basic and advanced AI nodes such as
@@ -314,6 +294,14 @@ docker compose -p localai -f docker-compose.yml --profile <your-profile> pull
 
 # Start services again with your desired profile
 python start_services.py --profile <your-profile>
+
+# If the `localai-postgres-1` container fails health checks after upgrading to a newer
+# PostgreSQL image (18+), update the Langfuse Postgres volume mount to use
+# `/var/lib/postgresql` instead of `/var/lib/postgresql/data`, then recreate the
+# stack. Older data directories created by previous images are still compatible as
+# long as the mount path matches the new layout. Remove the existing
+# `localai_langfuse_postgres_data` volume if the container refuses to start and
+# you do not need to keep the old contents.
 ```
 
 Replace `<your-profile>` with one of: `cpu`, `gpu-nvidia`, `gpu-amd`, or `none`.
@@ -350,7 +338,7 @@ Here are solutions to common issues you might encounter:
 ## 👓 Recommended reading
 
 n8n is full of useful content for getting started quickly with its AI concepts
-and nodes. If you run into an issue, go to [support](#support).
+and nodes. If you run into an issue, see the [Troubleshooting](#troubleshooting) section.
 
 - [AI agents for developers: from theory to practice with n8n](https://blog.n8n.io/ai-agents/)
 - [Tutorial: Build an AI workflow in n8n](https://docs.n8n.io/advanced-ai/intro-tutorial/)
@@ -382,7 +370,7 @@ your local n8n instance.
 
 - [Tax Code Assistant](https://n8n.io/workflows/2341-build-a-tax-code-assistant-with-qdrant-mistralai-and-openai/)
 - [Breakdown Documents into Study Notes with MistralAI and Qdrant](https://n8n.io/workflows/2339-breakdown-documents-into-study-notes-using-templating-mistralai-and-qdrant/)
-- [Financial Documents Assistant using Qdrant and](https://n8n.io/workflows/2335-build-a-financial-documents-assistant-using-qdrant-and-mistralai/) [ Mistral.ai](http://mistral.ai/)
+- [Financial Documents Assistant using Qdrant and Mistral](https://n8n.io/workflows/2335-build-a-financial-documents-assistant-using-qdrant-and-mistralai/)
 - [Recipe Recommendations with Qdrant and Mistral](https://n8n.io/workflows/2333-recipe-recommendations-with-qdrant-and-mistral/)
 
 ## Tips & tricks
@@ -395,7 +383,7 @@ allows n8n to access files on disk. This folder within the n8n container is
 located at `/data/shared` -- this is the path you’ll need to use in nodes that
 interact with the local filesystem.
 
-**Nodes that interact with the local filesystem**
+### Nodes that interact with the local filesystem
 
 - [Read/Write Files from Disk](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.filesreadwrite/)
 - [Local File Trigger](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.localfiletrigger/)
